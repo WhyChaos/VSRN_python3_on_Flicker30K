@@ -230,7 +230,7 @@ class PrecompDataset(data.Dataset):
     def __getitem__(self, index):
         # handle the image redundancy
         img_id = index/self.im_div
-        image = torch.Tensor(self.images[img_id])
+        image = torch.Tensor(self.images[int(img_id)])
         caption = self.captions[index]
         vocab = self.vocab
 
