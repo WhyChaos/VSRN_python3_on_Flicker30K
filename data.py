@@ -119,7 +119,7 @@ class CocoDataset(data.Dataset):
 
         # Convert caption (string) to word ids.
         tokens = nltk.tokenize.word_tokenize(
-            str(caption).lower().decode('utf-8'))
+            str(caption).lower()
         caption = []
         caption.append(vocab('<start>'))
         caption.extend([vocab(token) for token in tokens])
@@ -178,7 +178,7 @@ class FlickrDataset(data.Dataset):
 
         # Convert caption (string) to word ids.
         tokens = nltk.tokenize.word_tokenize(
-            str(caption).lower().decode('utf-8'))
+            str(caption).lower()
         caption = []
         caption.append(vocab('<start>'))
         caption.extend([vocab(token) for token in tokens])
@@ -206,7 +206,7 @@ class PrecompDataset(data.Dataset):
         with open(loc+'%s_caps.txt' % data_split, 'rb') as f:
             for line in f:
                 self.captions.append(line.strip())
-                tokens = nltk.tokenize.word_tokenize(str(line.strip()).lower().decode('utf-8'))
+                tokens = nltk.tokenize.word_tokenize(str(line.strip()).lower()
                 token_caption.append(tokens)        
 
         each_cap_lengths = [len(cap) for cap in token_caption]
@@ -236,7 +236,7 @@ class PrecompDataset(data.Dataset):
 
         # Convert caption (string) to word ids.
         tokens = nltk.tokenize.word_tokenize(
-            str(caption).lower().decode('utf-8'))
+            str(caption).lower()
         caption = []
         caption.append(vocab('<start>'))
         caption.extend([vocab(token) for token in tokens])
