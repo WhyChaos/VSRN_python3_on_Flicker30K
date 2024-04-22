@@ -42,17 +42,17 @@ class EncoderRNN(nn.Module):
         """
         Applies a multi-layer RNN to an input sequence.
         Args:
-            input_var (batch, seq_len): tensor containing the features of the input sequence.
-            input_lengths (list of int, optional): A list that contains the lengths of sequences
-              in the mini-batch
-        Returns: output, hidden
-            - **output** (batch, seq_len, hidden_size): variable containing the encoded features of the input sequence
-            - **hidden** (num_layers * num_directions, batch, hidden_size): variable containing the features in the hidden state h
+            vid_feats (batch, seq_len, dim_vid): tensor containing the features of the input sequence.
+        Returns:
+            output (batch, seq_len, hidden_size): variable containing the encoded features of the input sequence
+            hidden (num_layers * num_directions, batch, hidden_size): variable containing the features in the hidden state h
         """
         batch_size, seq_len, dim_vid = vid_feats.size()
         vid_feats = self.vid2hid(vid_feats.reshape(-1, dim_vid))
         vid_feats = self.input_dropout(vid_feats)
         vid_feats = vid_feats.view(batch_size, seq_len, self.dim_hidden)
         self.rnn.flatten_parameters()
-        output, hidden = self.rnn(vid_feats)
+        output, hidden = self.rnn(vid_feats.transpose(0, 1))
+        output = output.transpose(0, 1)
+        hidden = hidden.transpose(0, 1).contiguous()
         return output, hidden
