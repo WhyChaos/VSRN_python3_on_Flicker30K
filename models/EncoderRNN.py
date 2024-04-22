@@ -50,9 +50,9 @@ class EncoderRNN(nn.Module):
             - **hidden** (num_layers * num_directions, batch, hidden_size): variable containing the features in the hidden state h
         """
         batch_size, seq_len, dim_vid = vid_feats.size()
-        vid_feats = self.vid2hid(vid_feats.reshape(-1, dim_vid))
+        vid_feats = self.vid2hid(vid_feats.view(-1, dim_vid))
         vid_feats = self.input_dropout(vid_feats)
-        vid_feats = vid_feats.reshape(batch_size, seq_len, self.dim_hidden)
+        vid_feats = vid_feats.view(batch_size, seq_len, self.dim_hidden)
         self.rnn.flatten_parameters()
         output, hidden = self.rnn(vid_feats)
         return output, hidden
