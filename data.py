@@ -206,7 +206,7 @@ class PrecompDataset(data.Dataset):
         with open(loc+'%s_caps.txt' % data_split, 'rb') as f:
             for line in f:
                 self.captions.append(line.strip())
-                tokens = nltk.tokenize.word_tokenize(str(line.strip()).lower()
+                tokens = nltk.tokenize.word_tokenize(str(line.strip()).lower())
                 token_caption.append(tokens)        
 
         each_cap_lengths = [len(cap) for cap in token_caption]
