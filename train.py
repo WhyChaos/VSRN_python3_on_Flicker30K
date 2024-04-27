@@ -14,6 +14,19 @@ import tensorboard_logger as tb_logger
 import argparse
 
 
+logger = logging.getLogger('my_logger')
+logger.setLevel(logging.DEBUG)
+
+# 创建文件处理器
+file_handler = logging.FileHandler('train_Flicker30K.log')
+# 设置日志级别
+file_handler.setLevel(logging.DEBUG)
+# 设置日志格式
+formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+file_handler.setFormatter(formatter)
+# 将文件处理器添加到logger
+logger.addHandler(file_handler)
+
 
 def main():
     # Hyper Parameters
@@ -122,18 +135,6 @@ def main():
 
     # logging.basicConfig(filename='train_Flicker30K.log', format='%(asctime)s %(message)s', level=logging.INFO)
 
-    logger = logging.getLogger('my_logger')
-    logger.setLevel(logging.DEBUG)
-
-    # 创建文件处理器
-    file_handler = logging.FileHandler('train_Flicker30K.log')
-    # 设置日志级别
-    file_handler.setLevel(logging.DEBUG)
-    # 设置日志格式
-    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
-    file_handler.setFormatter(formatter)
-    # 将文件处理器添加到logger
-    logger.addHandler(file_handler)
 
     tb_logger.configure(opt.logger_name, flush_secs=5)
 
@@ -222,7 +223,7 @@ def train(opt, train_loader, model, epoch, val_loader, best_rsum):
 
         # Print log info
         if model.Eiters % opt.log_step == 0:
-            logging.info(
+            logger.info(
                 'Epoch: [{0}][{1}/{2}]\t'
                 '{e_log}\t'
                 'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
@@ -266,7 +267,7 @@ def validate(opt, val_loader, model):
 
     # caption retrieval
     (r1, r5, r10, medr, meanr) = i2t(img_embs, cap_embs, measure=opt.measure)
-    logging.info("Image to text: %.1f, %.1f, %.1f, %.1f, %.1f" %
+    logger.info("Image to text: %.1f, %.1f, %.1f, %.1f, %.1f" %
                  (r1, r5, r10, medr, meanr))
     # image retrieval
     (r1i, r5i, r10i, medri, meanr) = t2i(
