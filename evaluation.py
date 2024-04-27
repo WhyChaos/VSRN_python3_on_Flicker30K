@@ -252,6 +252,9 @@ def t2i(images, captions, npts=None, measure='cosine', return_ranks=False):
     """
     if npts is None:
         npts = images.shape[0] / 5
+    
+    npts = int(npts)
+    
     ims = numpy.array([images[i] for i in range(0, len(images), 5)])
 
     ranks = numpy.zeros(5 * npts)
