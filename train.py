@@ -120,7 +120,21 @@ def main():
     opt = parser.parse_args()
     print(opt)
 
-    logging.basicConfig(filename='train_Flicker30K.log', format='%(asctime)s %(message)s', level=logging.INFO)
+    # logging.basicConfig(filename='train_Flicker30K.log', format='%(asctime)s %(message)s', level=logging.INFO)
+
+    logger = logging.getLogger('my_logger')
+    logger.setLevel(logging.DEBUG)
+
+    # 创建文件处理器
+    file_handler = logging.FileHandler('train_Flicker30K.log')
+    # 设置日志级别
+    file_handler.setLevel(logging.DEBUG)
+    # 设置日志格式
+    formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+    file_handler.setFormatter(formatter)
+    # 将文件处理器添加到logger
+    logger.addHandler(file_handler)
+
     tb_logger.configure(opt.logger_name, flush_secs=5)
 
     # Load Vocabulary Wrapper
