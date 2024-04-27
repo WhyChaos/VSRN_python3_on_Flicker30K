@@ -68,7 +68,7 @@ class LogCollector(object):
     def tb_log(self, tb_logger, prefix='', step=None):
         """Log using tensorboard
         """
-        for k, v in self.meters.iteritems():
+        for k, v in self.meters.items():
             tb_logger.log_value(prefix + k, v.val, step=step)
 
 
