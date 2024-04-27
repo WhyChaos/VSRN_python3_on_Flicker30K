@@ -53,6 +53,6 @@ class EncoderRNN(nn.Module):
         vid_feats = self.vid2hid(vid_feats.reshape(-1, dim_vid))
         vid_feats = self.input_dropout(vid_feats)
         vid_feats = vid_feats.view(batch_size, seq_len, self.dim_hidden)
-        # self.rnn.flatten_parameters()
+        self.rnn.flatten_parameters()
         output, hidden = self.rnn(vid_feats)
         return output, hidden
