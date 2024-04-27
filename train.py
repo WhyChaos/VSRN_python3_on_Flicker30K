@@ -102,7 +102,7 @@ def main():
     parser.add_argument(
         '--rnn_dropout_p',
         type=float,
-        default=0.5,
+        default=0,
         help='strength of dropout in the Language Model RNN')
 
     parser.add_argument(
