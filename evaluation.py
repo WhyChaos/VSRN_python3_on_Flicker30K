@@ -200,7 +200,7 @@ def i2t(images, captions, npts=None, measure='cosine', return_ranks=False):
     if npts is None:
         npts = int(images.shape[0] / 5)
     index_list = []
-
+    npts = int(npts)
     ranks = numpy.zeros(npts)
     top1 = numpy.zeros(npts)
     for index in range(npts):
