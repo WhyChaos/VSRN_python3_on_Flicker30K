@@ -268,6 +268,7 @@ def t2i(images, captions, images2, captions2, npts=None, measure='cosine', retur
     """
     if npts is None:
         npts = images.shape[0] / 5
+    npts = int(npts)
     ims = numpy.array([images[i] for i in range(0, len(images), 5)])
 
     ims2 = numpy.array([images2[i] for i in range(0, len(images2), 5)])

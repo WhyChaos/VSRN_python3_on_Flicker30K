@@ -120,7 +120,7 @@ def main():
     opt = parser.parse_args()
     print(opt)
 
-    logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
+    logging.basicConfig(filename='train_Flicker30K.log', format='%(asctime)s %(message)s', level=logging.INFO)
     tb_logger.configure(opt.logger_name, flush_secs=5)
 
     # Load Vocabulary Wrapper
