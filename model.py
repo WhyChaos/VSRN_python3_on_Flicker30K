@@ -566,7 +566,7 @@ class VSRN(object):
         loss = retrieval_loss + caption_loss
 
 
-        self.logger.update('Le_caption', caption_loss.data[0], img_emb.size(0))
+        # self.logger.update('Le_caption', caption_loss.data[0], img_emb.size(0))
         self.logger.update('Le', loss.data[0], img_emb.size(0))
 
         # compute gradient and do SGD step
