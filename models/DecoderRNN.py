@@ -9,16 +9,16 @@ from .Attention import Attention
 
 class DecoderRNN(nn.Module):
     """
-    Provides functionality for decoding in a seq2seq framework, with an option for attention.
+    提供在 seq2seq 框架中进行解码的功能，并提供关注选项。
     Args:
-        vocab_size (int): size of the vocabulary
-        max_len (int): a maximum allowed length for the sequence to be processed
-        dim_hidden (int): the number of features in the hidden state `h`
-        n_layers (int, optional): number of recurrent layers (default: 1)
-        rnn_cell (str, optional): type of RNN cell (default: gru)
-        bidirectional (bool, optional): if the encoder is bidirectional (default False)
-        input_dropout_p (float, optional): dropout probability for the input sequence (default: 0)
-        rnn_dropout_p (float, optional): dropout probability for the output sequence (default: 0)
+        vocab_size (int): 词汇表大小
+        max_len (int): 最大可处理的序列长
+        dim_hidden (int): 隐藏层大小
+        n_layers (int, optional): 循环层数
+        rnn_cell (str, optional): RNN类型
+        bidirectional (bool, optional): 是否双向
+        input_dropout_p (float, optional): 输入dropout概率
+        rnn_dropout_p (float, optional): rnn的dropout概率
 
     """
 
@@ -121,11 +121,11 @@ class DecoderRNN(nn.Module):
                     it = it.view(-1).long()
 
                 else:
-                    # sample according to distribuition
+                    # 根据分布采样
                     if temperature == 1.0:
                         prob_prev = torch.exp(logprobs)
                     else:
-                        # scale logprobs by temperature
+                        # 温度系数
                         prob_prev = torch.exp(torch.div(logprobs, temperature))
                     it = torch.multinomial(prob_prev, 1).cuda()
                     sampleLogprobs = logprobs.gather(1, it)
@@ -148,12 +148,12 @@ class DecoderRNN(nn.Module):
         return seq_logprobs, seq_preds
 
     def _init_weights(self):
-        """ init the weight of some layers
+        """ 初始化一些层
         """
         nn.init.xavier_normal_(self.out.weight)
 
     def _init_rnn_state(self, encoder_hidden):
-        """ Initialize the encoder hidden state. """
+        """ 初始化encoder的隐藏层"""
         if encoder_hidden is None:
             return None
         if isinstance(encoder_hidden, tuple):
@@ -164,7 +164,7 @@ class DecoderRNN(nn.Module):
         return encoder_hidden
 
     def _cat_directions(self, h):
-        """ If the encoder is bidirectional, do the following transformation.
+        """ 如果是双向
             (#directions * #layers, #batch, dim_hidden) -> (#layers, #batch, #directions * dim_hidden)
         """
         if self.bidirectional_encoder:

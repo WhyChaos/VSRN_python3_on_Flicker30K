@@ -20,7 +20,7 @@ annotations = {
 
 
 class Vocabulary(object):
-    """Simple vocabulary wrapper."""
+    # 词汇表
 
     def __init__(self):
         self.word2idx = {}
@@ -70,7 +70,7 @@ def from_txt(txt):
 
 
 def build_vocab(data_path, data_name, jsons, threshold):
-    """Build a simple vocabulary wrapper."""
+    # 建词汇表
     counter = Counter()
     for path in jsons[data_name]:
         full_path = os.path.join(os.path.join(data_path, data_name), path)
@@ -88,17 +88,17 @@ def build_vocab(data_path, data_name, jsons, threshold):
             if i % 1000 == 0:
                 print("[%d/%d] tokenized the captions." % (i, len(captions)))
 
-    # Discard if the occurrence of the word is less than min_word_cnt.
+    # 如果单词的出现次数少于阈值，则丢弃。
     words = [word for word, cnt in counter.items() if cnt >= threshold]
 
-    # Create a vocab wrapper and add some special tokens.
+    # 创建一个词汇包装器并添加一些特殊标记。
     vocab = Vocabulary()
     vocab.add_word('<pad>')
     vocab.add_word('<start>')
     vocab.add_word('<end>')
     vocab.add_word('<unk>')
 
-    # Add words to the vocabulary.
+    # 将单词添加到词汇表中。
     for i, word in enumerate(words):
         vocab.add_word(word)
     return vocab

@@ -21,8 +21,7 @@ from torch import nn
 
 
 def l2norm(X):
-    """L2-normalize columns of X
-    """
+    # L2 正则化
     norm = torch.pow(X, 2).sum(dim=1, keepdim=True).sqrt()
     X = torch.div(X, norm)
     return X
@@ -30,10 +29,7 @@ def l2norm(X):
 
 def EncoderImage(data_name, img_dim, embed_size, finetune=False,
                  cnn_type='vgg19', use_abs=False, no_imgnorm=False, use_txt_emb = True):
-    """A wrapper to image encoders. Chooses between an encoder that uses
-    precomputed image features, `EncoderImagePrecomp`, or an encoder that
-    computes image features on the fly `EncoderImageFull`.
-    """
+    # 图形编码
     if data_name.endswith('_precomp'):
         if use_txt_emb == True:
             img_enc = EncoderImagePrecompAttn(
@@ -48,25 +44,25 @@ def EncoderImage(data_name, img_dim, embed_size, finetune=False,
     return img_enc
 
 
-# tutorials/09 - Image Captioning
+# 图像编码
 class EncoderImageFull(nn.Module):
 
     def __init__(self, embed_size, finetune=False, cnn_type='vgg19',
                  use_abs=False, no_imgnorm=False):
-        """Load pretrained VGG19 and replace top fc layer."""
+        # 加载vgg
         super(EncoderImageFull, self).__init__()
         self.embed_size = embed_size
         self.no_imgnorm = no_imgnorm
         self.use_abs = use_abs
 
-        # Load a pre-trained model
+        # 加载预训练模型
         self.cnn = self.get_cnn(cnn_type, True)
 
-        # For efficient memory usage.
+        # 高效使用内存
         for param in self.cnn.parameters():
             param.requires_grad = finetune
 
-        # Replace the last fully connected layer of CNN with a new one
+        # 更换分类头
         if cnn_type.startswith('vgg'):
             self.fc = nn.Linear(self.cnn.classifier._modules['6'].in_features,
                                 embed_size)
@@ -79,8 +75,7 @@ class EncoderImageFull(nn.Module):
         self.init_weights()
 
     def get_cnn(self, arch, pretrained):
-        """Load a pretrained CNN and parallelize over GPUs
-        """
+        # 加载预训练模型，高效使用GPU
         if pretrained:
             print("=> using pre-trained model '{}'".format(arch))
             model = models.__dict__[arch](pretrained=True)
@@ -98,7 +93,7 @@ class EncoderImageFull(nn.Module):
 
     def load_state_dict(self, state_dict):
         """
-        Handle the models saved before commit pytorch/vision@989d52a
+        在保存之前处理模型
         """
         if 'cnn.classifier.1.weight' in state_dict:
             state_dict['cnn.classifier.0.weight'] = state_dict[
@@ -117,28 +112,27 @@ class EncoderImageFull(nn.Module):
         super(EncoderImageFull, self).load_state_dict(state_dict)
 
     def init_weights(self):
-        """Xavier initialization for the fully connected layer
-        """
+        # Xavier初始化全连接层
         r = np.sqrt(6.) / np.sqrt(self.fc.in_features +
                                   self.fc.out_features)
         self.fc.weight.data.uniform_(-r, r)
         self.fc.bias.data.fill_(0)
 
     def forward(self, images):
-        """Extract image feature vectors."""
+        """提取图像特征向量"""
         features = self.cnn(images)
 
-        # normalization in the image embedding space
+        # 图像嵌入特征标准化
         features = l2norm(features)
 
-        # linear projection to the joint embedding space
+        # 线性投影至融合特征向量
         features = self.fc(features)
 
-        # normalization in the joint embedding space
+        # 融合特征向量标准化
         if not self.no_imgnorm:
             features = l2norm(features)
 
-        # take the absolute value of the embedding (used in order embeddings)
+        # 取特征向量的绝对值
         if self.use_abs:
             features = torch.abs(features)
 
@@ -160,7 +154,7 @@ class EncoderImagePrecomp(nn.Module):
 
 
     def init_weights(self):
-        """Xavier initialization for the fully connected layer
+        """Xavier初始化全连接层
         """
         r = np.sqrt(6.) / np.sqrt(self.fc.in_features +
                                   self.fc.out_features)
@@ -168,26 +162,25 @@ class EncoderImagePrecomp(nn.Module):
         self.fc.bias.data.fill_(0)
 
     def forward(self, images):
-        """Extract image feature vectors."""
+        """提取图像特征向量"""
         # assuming that the precomputed features are already l2-normalized
 
         # print(images)
         # images = images.view(images.size(0), 73728)
         features = self.fc(images)
 
-        # normalize in the joint embedding space
+        # 在融合特征量中标准化
         if not self.no_imgnorm:
             features = l2norm(features)
 
-        # take the absolute value of embedding (used in order embeddings)
+        # 融合特征向量取绝对值
         if self.use_abs:
             features = torch.abs(features)
 
         return features
 
     def load_state_dict(self, state_dict):
-        """Copies parameters. overwritting the default one to
-        accept state_dict from Full model
+        """复制参数。 覆盖默认值以接受完整模型中的 state_dict
         """
         own_state = self.state_dict()
         new_state = OrderedDict()
@@ -216,7 +209,7 @@ class EncoderImagePrecompAttn(nn.Module):
         # GSR
         self.img_rnn = nn.GRU(embed_size, embed_size, 1, batch_first=True)
 
-        # GCN reasoning 
+        # GCN 推理 
         self.Rs_GCN_1 = Rs_GCN(in_channels=embed_size, inter_channels=embed_size)
         self.Rs_GCN_2 = Rs_GCN(in_channels=embed_size, inter_channels=embed_size)
         self.Rs_GCN_3 = Rs_GCN(in_channels=embed_size, inter_channels=embed_size)
@@ -226,7 +219,7 @@ class EncoderImagePrecompAttn(nn.Module):
             self.bn = nn.BatchNorm1d(embed_size)        
 
     def init_weights(self):
-        """Xavier initialization for the fully connected layer
+        """Xavier初始化全连接层
         """
         r = np.sqrt(6.) / np.sqrt(self.fc.in_features +
                                   self.fc.out_features)
@@ -234,13 +227,13 @@ class EncoderImagePrecompAttn(nn.Module):
         self.fc.bias.data.fill_(0)
 
     def forward(self, images):
-        """Extract image feature vectors."""
+        # 提取图像特征
 
         fc_img_emd = self.fc(images)
         if self.data_name != 'f30k_precomp':
             fc_img_emd = l2norm(fc_img_emd)
 
-        # GCN reasoning
+        # GCN 推理
         # -> B,D,N
         GCN_img_emd = fc_img_emd.permute(0, 2, 1)
         GCN_img_emd = self.Rs_GCN_1(GCN_img_emd)
@@ -260,19 +253,18 @@ class EncoderImagePrecompAttn(nn.Module):
         if self.data_name == 'f30k_precomp':
             features = self.bn(features)                
                
-        # normalize in the joint embedding space
+        # 融合空间标准化
         if not self.no_imgnorm:
             features = l2norm(features)
 
-        # take the absolute value of embedding (used in order embeddings)
+        # 取绝对值
         if self.use_abs:
             features = torch.abs(features)
 
         return features, GCN_img_emd
 
     def load_state_dict(self, state_dict):
-        """Copies parameters. overwritting the default one to
-        accept state_dict from Full model
+        """复制参数。 覆盖默认值以接受完整模型中的 state_dict
         """
         own_state = self.state_dict()
         new_state = OrderedDict()
@@ -288,7 +280,7 @@ class EncoderImagePrecompAttn(nn.Module):
 
 
 # tutorials/08 - Language Model
-# RNN Based Language Model
+# RNN 基于语言模型
 class EncoderText(nn.Module):
 
     def __init__(self, vocab_size, word_dim, embed_size, num_layers,
@@ -297,10 +289,10 @@ class EncoderText(nn.Module):
         self.use_abs = use_abs
         self.embed_size = embed_size
 
-        # word embedding
+        # 词嵌入
         self.embed = nn.Embedding(vocab_size, word_dim)
 
-        # caption embedding
+        # 描述嵌入
         self.rnn = nn.GRU(word_dim, embed_size, num_layers, batch_first=True)
 
         self.init_weights()
@@ -310,27 +302,27 @@ class EncoderText(nn.Module):
         self.embed.weight.data.uniform_(-0.1, 0.1)
 
     def forward(self, x, lengths):
-        """Handles variable size captions
+        """处理长度不一的描述
         """
-        # Embed word ids to vectors
+        # 下标映射到词
         x = self.embed(x)
         packed = pack_padded_sequence(x, lengths, batch_first=True)
 
 
-        # Forward propagate RNN
+        # 前向传播
         out, _ = self.rnn(packed)
 
 
-        # Reshape *final* output to (batch_size, hidden_size)
+        # Reshape 最后输出为 (batch_size, hidden_size)
         padded = pad_packed_sequence(out, batch_first=True)
         I = torch.LongTensor(lengths).view(-1, 1, 1)
         I = Variable(I.expand(x.size(0), 1, self.embed_size)-1).cuda()
         out = torch.gather(padded[0], 1, I).squeeze(1)
 
-        # normalization in the joint embedding space
+        # 融合空间
         out = l2norm(out)
 
-        # take absolute value, used by order embeddings
+        # 取绝对值
         if self.use_abs:
             out = torch.abs(out)
 
@@ -339,13 +331,13 @@ class EncoderText(nn.Module):
 
 
 def cosine_sim(im, s):
-    """Cosine similarity between all the image and sentence pairs
+    """所有文本句子对的余弦相似度
     """
     return im.mm(s.t())
 
 
 def order_sim(im, s):
-    """Order embeddings similarity measure $max(0, s-im)$
+    """相似度排名
     """
     YmX = (s.unsqueeze(1).expand(s.size(0), im.size(0), s.size(1))
            - im.unsqueeze(0).expand(s.size(0), im.size(0), s.size(1)))
@@ -355,7 +347,7 @@ def order_sim(im, s):
 
 class ContrastiveLoss(nn.Module):
     """
-    Compute contrastive loss
+    计算对比损失
     """
 
     def __init__(self, margin=0, measure=False, max_violation=False):
@@ -369,20 +361,20 @@ class ContrastiveLoss(nn.Module):
         self.max_violation = max_violation
 
     def forward(self, im, s):
-        # compute image-sentence score matrix
+        # 计算图像文本分数举证
         scores = self.sim(im, s)
         diagonal = scores.diag().view(im.size(0), 1)
         d1 = diagonal.expand_as(scores)
         d2 = diagonal.t().expand_as(scores)
 
-        # compare every diagonal score to scores in its column
-        # caption retrieval
+        # 将每个对角线分数与其列中的分数进行比较
+        # 标题检索
         cost_s = (self.margin + scores - d1).clamp(min=0)
-        # compare every diagonal score to scores in its row
-        # image retrieval
+        # 将每个对角线分数与其行中的分数进行比较
+         # 图像检索
         cost_im = (self.margin + scores - d2).clamp(min=0)
 
-        # clear diagonals
+        # 清理对角线
         mask = torch.eye(scores.size(0)) > .5
         I = Variable(mask)
         if torch.cuda.is_available():
@@ -390,7 +382,7 @@ class ContrastiveLoss(nn.Module):
         cost_s = cost_s.masked_fill_(I, 0)
         cost_im = cost_im.masked_fill_(I, 0)
 
-        # keep the maximum violating negative for each query
+        # 保留每个查询的最大负数
         if self.max_violation:
             cost_s = cost_s.max(1)[0]
             cost_im = cost_im.max(0)[0]
@@ -404,8 +396,8 @@ class VSRN(object):
     """
 
     def __init__(self, opt):
-        # tutorials/09 - Image Captioning
-        # Build Models
+        # tutorials/09 - 图像描述
+        # B模型
         self.grad_clip = opt.grad_clip
         self.img_enc = EncoderImage(opt.data_name, opt.img_dim, opt.embed_size,
                                     opt.finetune, opt.cnn_type,
@@ -421,7 +413,7 @@ class VSRN(object):
 
 
 
-        #####   captioning elements
+        
         
         self.encoder = EncoderRNN(
             opt.dim_vid,
@@ -449,7 +441,7 @@ class VSRN(object):
             self.caption_model.cuda()
 
 
-        # Loss and Optimizer
+        #损失函数和优化器
         self.criterion = ContrastiveLoss(margin=opt.margin,
                                          measure=opt.measure,
                                          max_violation=opt.max_violation)
@@ -501,19 +493,19 @@ class VSRN(object):
         self.txt_enc.load_state_dict(state_dict[1])
 
     def train_start(self):
-        """switch to train mode
+        """切换至训练模型
         """
         self.img_enc.train()
         self.txt_enc.train()
 
     def val_start(self):
-        """switch to evaluate mode
+        """训练至评估模式
         """
         self.img_enc.eval()
         self.txt_enc.eval()
 
     def forward_emb(self, images, captions, lengths, volatile=False):
-        """Compute the image and caption embeddings
+        """计算图像描述嵌入
         """
         # Set mini-batch dataset
         #images = Variable(images, volatile=volatile)
@@ -524,14 +516,14 @@ class VSRN(object):
             images = images.cuda()
             captions = captions.cuda()
 
-        # Forward
+        # 前向
 
         cap_emb = self.txt_enc(captions, lengths)
         img_emb, GCN_img_emd = self.img_enc(images)
         return img_emb, cap_emb, GCN_img_emd
 
     def forward_loss(self, img_emb, cap_emb, **kwargs):
-        """Compute the loss given pairs of image and caption embeddings
+        """计算损失
         """
         loss = self.criterion(img_emb, cap_emb)
         # self.logger.update('Le', loss.data[0], img_emb.size(0))
@@ -539,26 +531,26 @@ class VSRN(object):
         return loss
 
     def train_emb(self, images, captions, lengths, ids, caption_labels, caption_masks, *args):
-        """One training step given images and captions.
+        """一个图像描述训练步
         """
         self.Eiters += 1
         self.logger.update('Eit', self.Eiters)
         self.logger.update('lr', self.optimizer.param_groups[0]['lr'])
 
-        # compute the embeddings
+        # 计算嵌入
         img_emb, cap_emb, GCN_img_emd = self.forward_emb(images, captions, lengths)
 
 
 
 
-        # calcualte captioning loss
+        # 计算描述损失
         self.optimizer.zero_grad()
 
         caption_loss = self.calcualte_caption_loss(GCN_img_emd, caption_labels, caption_masks)
 
 
 
-        # measure accuracy and record loss
+        #测量准确性和记录损失
         self.optimizer.zero_grad()
         retrieval_loss = self.forward_loss(img_emb, cap_emb)
 
@@ -569,7 +561,7 @@ class VSRN(object):
         # self.logger.update('Le_caption', caption_loss.data[0], img_emb.size(0))
         # self.logger.update('Le', loss.data[0], img_emb.size(0))
 
-        # compute gradient and do SGD step
+        # 计算梯度，进行SDG
         loss.backward()
         if self.grad_clip > 0:
             clip_grad_norm(self.params, self.grad_clip)

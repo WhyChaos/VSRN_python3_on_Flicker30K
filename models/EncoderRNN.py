@@ -7,11 +7,11 @@ class EncoderRNN(nn.Module):
         """
 
         Args:
-            hidden_dim (int): dim of hidden state of rnn
-            input_dropout_p (int): dropout probability for the input sequence
-            dropout_p (float): dropout probability for the output sequence
-            n_layers (int): number of rnn layers
-            rnn_cell (str): type of RNN cell ('LSTM'/'GRU')
+            hidden_dim (int): rnn 隐藏层维度
+            input_dropout_p (int): 输入序列的dropout概率
+            dropout_p (float): 输出序列的dropout概率
+            n_layers (int): rnn层数
+            rnn_cell (str): RNN类型 ('LSTM'/'GRU')
         """
         super(EncoderRNN, self).__init__()
         self.dim_vid = dim_vid
@@ -39,13 +39,13 @@ class EncoderRNN(nn.Module):
 
     def forward(self, vid_feats):
         """
-        Applies a multi-layer RNN to an input sequence.
+        引用RNN到输入序列
         Args:
-            input_var (batch, seq_len): tensor containing the features of the input sequence.
-            input_lengths (list of int, optional): A list that contains the lengths of sequences
+            input_var (batch, seq_len): 输入序列特征
+            input_lengths (list of int, optional): list类型 输入序列
               in the mini-batch
         Returns: output, hidden
-            - **output** (batch, seq_len, hidden_size): variable containing the encoded features of the input sequence
+            - **output** (batch, seq_len, hidden_size):编码输入序列
             - **hidden** (num_layers * num_directions, batch, hidden_size): variable containing the features in the hidden state h
         """
         batch_size, seq_len, dim_vid = vid_feats.size()

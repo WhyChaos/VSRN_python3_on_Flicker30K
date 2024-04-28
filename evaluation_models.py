@@ -15,7 +15,7 @@ from collections import OrderedDict
 
 
 class AverageMeter(object):
-    """Computes and stores the average and current value"""
+    """计算和存储当前和平均值"""
 
     def __init__(self):
         self.reset()
@@ -33,7 +33,7 @@ class AverageMeter(object):
         self.avg = self.sum / (.0001 + self.count)
 
     def __str__(self):
-        """String representation for logging
+        """logging表达
         """
         # for values that should be recorded exactly e.g. iteration number
         if self.count == 0:
@@ -43,20 +43,20 @@ class AverageMeter(object):
 
 
 class LogCollector(object):
-    """A collection of logging objects that can change from train to val"""
+    """日志收集"""
 
     def __init__(self):
-        # to keep the order of logged variables deterministic
+        # 保持日志顺序
         self.meters = OrderedDict()
 
     def update(self, k, v, n=0):
-        # create a new meter if previously not recorded
+        # 如果之前没有记录，则创建一个新仪表
         if k not in self.meters:
             self.meters[k] = AverageMeter()
         self.meters[k].update(v, n)
 
     def __str__(self):
-        """Concatenate the meters in one log line
+        """记录一条log
         """
         s = ''
         for i, (k, v) in enumerate(self.meters.items()):
@@ -66,40 +66,40 @@ class LogCollector(object):
         return s
 
     def tb_log(self, tb_logger, prefix='', step=None):
-        """Log using tensorboard
+        """使用tensorboard记录
         """
         for k, v in self.meters.items():
             tb_logger.log_value(prefix + k, v.val, step=step)
 
 
 def encode_data(model, data_loader, log_step=10, logging=print):
-    """Encode all images and captions loadable by `data_loader`
+    """编码所有的图像文本描述 加载于 `data_loader`
     """
     batch_time = AverageMeter()
     val_logger = LogCollector()
 
-    # switch to evaluate mode
+    # 切换至训练模式
     model.val_start()
 
     end = time.time()
 
-    # numpy array to keep all the embeddings
+    # numpy数组保持
     img_embs = None
     cap_embs = None
     for i, (images, captions, lengths, ids, caption_labels, caption_masks) in enumerate(data_loader):
-        # make sure val logger is used
+        # 确保验证日志被使用
         model.logger = val_logger
 
-        # compute the embeddings
+        # 计算嵌入
         img_emb, cap_emb, fc_img_emd = model.forward_emb(images, captions, lengths,
                                              volatile=True)
 
-        # initialize the numpy arrays given the size of the embeddings
+        # 初始化矩阵
         if img_embs is None:
             img_embs = np.zeros((len(data_loader.dataset), img_emb.size(1)))
             cap_embs = np.zeros((len(data_loader.dataset), cap_emb.size(1)))
 
-        # preserve the embeddings by copying from gpu and converting to numpy
+        # 通过从 GPU 复制并转换为 numpy 来保留嵌入
         img_embs[ids] = img_emb.data.cpu().numpy().copy()
         cap_embs[ids] = cap_emb.data.cpu().numpy().copy()
 
@@ -114,9 +114,7 @@ def encode_data(model, data_loader, log_step=10, logging=print):
 
 def evalrank(model_path, model_path2, data_path=None, split='dev', fold5=False):
     """
-    Evaluate a trained model on either dev or test. If `fold5=True`, 5 fold
-    cross-validation is done (only for MSCOCO). Otherwise, the full data is
-    used for evaluation.
+    在开发或测试中评估经过训练的模型
     """
     # load model and options
     checkpoint = torch.load(model_path)
@@ -128,7 +126,7 @@ def evalrank(model_path, model_path2, data_path=None, split='dev', fold5=False):
     if data_path is not None:
         opt.data_path = data_path
 
-    # load vocabulary used by the model
+    #加载词汇表
     with open(os.path.join(opt.vocab_path,
                            '%s_vocab.pkl' % opt.data_name), 'rb') as f:
         vocab = pickle.load(f)
@@ -139,7 +137,7 @@ def evalrank(model_path, model_path2, data_path=None, split='dev', fold5=False):
     model = VSRN(opt)
     model2 = VSRN(opt2)
 
-    # load model state
+    # 加载模型状态
     model.load_state_dict(checkpoint['model'])
 
     model2.load_state_dict(checkpoint2['model'])
@@ -156,7 +154,7 @@ def evalrank(model_path, model_path2, data_path=None, split='dev', fold5=False):
           (img_embs.shape[0] / 5, cap_embs.shape[0]))
 
     if not fold5:
-        # no cross-validation, full evaluation
+        # 没有交叉验证
         r, rt = i2t(img_embs, cap_embs, img_embs2, cap_embs2, measure=opt.measure, return_ranks=True)
         ri, rti = t2i(img_embs, cap_embs, img_embs2, cap_embs2, 
                       measure=opt.measure, return_ranks=True)
@@ -169,7 +167,7 @@ def evalrank(model_path, model_path2, data_path=None, split='dev', fold5=False):
         print("Average t2i Recall: %.1f" % ari)
         print("Text to image: %.1f %.1f %.1f %.1f %.1f" % ri)
     else:
-        # 5fold cross-validation, only for MSCOCO
+        # 5折交叉验证
         results = []
         for i in range(5):
             r, rt0 = i2t(img_embs[i * 5000:(i + 1) * 5000], cap_embs[i * 5000:(i + 1) *5000], 
@@ -206,6 +204,7 @@ def evalrank(model_path, model_path2, data_path=None, split='dev', fold5=False):
 
 def i2t(images, captions, images2, captions2, npts=None, measure='cosine', return_ranks=False):
     """
+    图像检索文本
     Images->Text (Image Annotation)
     Images: (5N, K) matrix of images
     Captions: (5N, K) matrix of captions
@@ -218,10 +217,10 @@ def i2t(images, captions, images2, captions2, npts=None, measure='cosine', retur
     top1 = numpy.zeros(npts)
     for index in range(npts):
 
-        # Get query image
+        # 获得询问图像
         im = images[5 * index].reshape(1, images.shape[1])
         im_2 = images2[5 * index].reshape(1, images2.shape[1])
-        # Compute scores
+        # C计算分数
         if measure == 'order':
             bs = 100
             if index % bs == 0:
@@ -239,7 +238,7 @@ def i2t(images, captions, images2, captions2, npts=None, measure='cosine', retur
         inds = numpy.argsort(d)[::-1]
         index_list.append(inds[0])
 
-        # Score
+        # 分数
         rank = 1e20
         for i in range(5 * index, 5 * index + 5, 1):
             tmp = numpy.where(inds == i)[0][0]
@@ -248,7 +247,7 @@ def i2t(images, captions, images2, captions2, npts=None, measure='cosine', retur
         ranks[index] = rank
         top1[index] = inds[0]
 
-    # Compute metrics
+    # 计算评价
     r1 = 100.0 * len(numpy.where(ranks < 1)[0]) / len(ranks)
     r5 = 100.0 * len(numpy.where(ranks < 5)[0]) / len(ranks)
     r10 = 100.0 * len(numpy.where(ranks < 10)[0]) / len(ranks)
@@ -262,6 +261,7 @@ def i2t(images, captions, images2, captions2, npts=None, measure='cosine', retur
 
 def t2i(images, captions, images2, captions2, npts=None, measure='cosine', return_ranks=False):
     """
+    文本检索图像
     Text->Images (Image Search)
     Images: (5N, K) matrix of images
     Captions: (5N, K) matrix of captions
@@ -277,10 +277,10 @@ def t2i(images, captions, images2, captions2, npts=None, measure='cosine', retur
     top1 = numpy.zeros(5 * npts)
     for index in range(npts):
 
-        # Get query captions
+        # 获得描述
         queries = captions[5 * index:5 * index + 5]
         queries2 = captions2[5 * index:5 * index + 5]
-        # Compute scores
+        # 计算分数
         if measure == 'order':
             bs = 100
             if 5 * index % bs == 0:
@@ -302,7 +302,7 @@ def t2i(images, captions, images2, captions2, npts=None, measure='cosine', retur
             ranks[5 * index + i] = numpy.where(inds[i] == index)[0][0]
             top1[5 * index + i] = inds[i][0]
 
-    # Compute metrics
+    # C计算评价
     r1 = 100.0 * len(numpy.where(ranks < 1)[0]) / len(ranks)
     r5 = 100.0 * len(numpy.where(ranks < 5)[0]) / len(ranks)
     r10 = 100.0 * len(numpy.where(ranks < 10)[0]) / len(ranks)

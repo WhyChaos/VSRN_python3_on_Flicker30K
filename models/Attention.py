@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 class Attention(nn.Module):
     """
-    Applies an attention mechanism on the output features from the decoder.
+    对解码器的输出特征应用注意机制。
     """
 
     def __init__(self, dim):

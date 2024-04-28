@@ -6,8 +6,8 @@ class S2VTAttModel(nn.Module):
         """
 
         Args:
-            encoder (nn.Module): Encoder rnn
-            decoder (nn.Module): Decoder rnn
+            encoder (nn.Module)： 编码
+            decoder (nn.Module): 解码
         """
         super(S2VTAttModel, self).__init__()
         self.encoder = encoder

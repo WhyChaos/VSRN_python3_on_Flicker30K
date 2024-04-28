@@ -3,7 +3,7 @@ import argparse
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    # Data input settings
+    # 输入数据设置
     parser.add_argument(
         '--input_json',
         type=str,
@@ -38,7 +38,7 @@ def parse_opt():
         help='Cached token file for calculating cider score \
                         during self critical training.')
 
-    # Model settings
+    # 模型设置
     parser.add_argument(
         "--model", type=str, default='S2VTModel', help="with model to use")
 
@@ -85,7 +85,7 @@ def parse_opt():
         default=2048,
         help='dim of features of video frames')
 
-    # Optimization: General
+    #优化设置
 
     parser.add_argument(
         '--epochs', type=int, default=6001, help='number of epochs')

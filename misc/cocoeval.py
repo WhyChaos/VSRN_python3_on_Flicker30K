@@ -1,8 +1,8 @@
 '''
-Wrapper for evaluation on CIDEr, ROUGE_L, METEOR and Bleu_N
-using coco-caption repo https://github.com/tylin/coco-caption
+用于评估 CIDEr、ROUGE_L、METEOR 和 Bleu_N 的包装器
+使用 coco-caption 仓库 https://github.com/tylin/coco-caption
 
-class COCOScorer is taken from https://github.com/yaoli/arctic-capgen-vid
+COCOScorer 类取自 https://github.com/yaoli/arctic-capgen-vid
 '''
 
 import json
@@ -20,31 +20,31 @@ from pycocoevalcap.tokenizer.ptbtokenizer import PTBTokenizer
 
 class suppress_stdout_stderr:
     '''
-    A context manager for doing a "deep suppression" of stdout and stderr in
-    Python, i.e. will suppress all print, even if the print originates in a
-    compiled C/Fortran sub-function.
-       This will not suppress raised exceptions, since exceptions are printed
-    to stderr just before a script exits, and after the context manager has
-    exited (at least, I think that is why it lets exceptions through).
+    用于对 stdout 和 stderr 进行“深度抑制”的上下文管理器
+     Python，即 将抑制所有打印，即使打印源自
+     编译的 C/Fortran 子函数。
+        这不会抑制引发的异常，因为异常会被打印
+     在脚本退出之前和上下文管理器之后发送到 stderr
+     退出（至少，我认为这就是它允许异常通过的原因）。
 
     '''
 
     def __init__(self):
-        # Open a pair of null files
+        #打开一对空文件
         self.null_fds = [os.open(os.devnull, os.O_RDWR) for x in range(2)]
-        # Save the actual stdout (1) and stderr (2) file descriptors.
+        # 保存实际的 stdout (1) 和 stderr (2) 文件描述符。
         self.save_fds = (os.dup(1), os.dup(2))
 
     def __enter__(self):
-        # Assign the null pointers to stdout and stderr.
+        # 将空指针分配给 stdout 和 stderr。
         os.dup2(self.null_fds[0], 1)
         os.dup2(self.null_fds[1], 2)
 
     def __exit__(self, *_):
-        # Re-assign the real stdout/stderr back to (1) and (2)
+        # 将真实的 stdout/stderr 重新分配回 (1) 和 (2)
         os.dup2(self.save_fds[0], 1)
         os.dup2(self.save_fds[1], 2)
-        # Close the null files
+        # C关闭空文件
         os.close(self.null_fds[0])
         os.close(self.null_fds[1])
 
@@ -68,7 +68,7 @@ class COCOScorer(object):
         res = tokenizer.tokenize(res)
 
         # =================================================
-        # Set up scorers
+        # 初始化打分器
         # =================================================
         print('setting up scorers...')
         scorers = [
@@ -80,7 +80,7 @@ class COCOScorer(object):
         ]
 
         # =================================================
-        # Compute scores
+        # 计算分数
         # =================================================
         eval = {}
         for scorer, method in scorers:

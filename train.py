@@ -29,7 +29,7 @@ logger.addHandler(file_handler)
 
 
 def main():
-    # Hyper Parameters
+    # 设置超参数
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', default='/data',
                         help='path to datasets')
@@ -88,7 +88,7 @@ def main():
                         help='Ensure the training is always done in '
                         'train mode (Not recommended).')
 
-    ###caption parameters
+    
     parser.add_argument(
         '--dim_vid',
         type=int,
@@ -138,19 +138,19 @@ def main():
 
     tb_logger.configure(opt.logger_name, flush_secs=5)
 
-    # Load Vocabulary Wrapper
+    # 加载词汇表
     vocab = pickle.load(open(os.path.join(
         opt.vocab_path, '%s_vocab.pkl' % opt.data_name), 'rb'))
     opt.vocab_size = len(vocab)
 
-    # Load data loaders
+    # 加载数据
     train_loader, val_loader = data.get_loaders(
         opt.data_name, vocab, opt.crop_size, opt.batch_size, opt.workers, opt)
 
-    # Construct the model
+    # 定义模型
     model = VSRN(opt)
 
-    # optionally resume from a checkpoint
+    # 选择从检查点恢复
     if opt.resume:
         if os.path.isfile(opt.resume):
             print("=> loading checkpoint '{}'".format(opt.resume))
@@ -158,8 +158,6 @@ def main():
             start_epoch = checkpoint['epoch']
             best_rsum = checkpoint['best_rsum']
             model.load_state_dict(checkpoint['model'])
-            # Eiters is used to show logs as the continuation of another
-            # training
             model.Eiters = checkpoint['Eiters']
             print("=> loaded checkpoint '{}' (epoch {}, best_rsum {})"
                   .format(opt.resume, start_epoch, best_rsum))
@@ -167,19 +165,19 @@ def main():
         else:
             print("=> no checkpoint found at '{}'".format(opt.resume))
 
-    # Train the Model
+    # 训练模型
     best_rsum = 0
-
+    # 训练模型
     for epoch in range(opt.num_epochs):
         adjust_learning_rate(opt, model.optimizer, epoch)
 
-        # train for one epoch
+        # 训练一个epoch
         best_rsum = train(opt, train_loader, model, epoch, val_loader, best_rsum)
 
-        # evaluate on validation set
+        # 在验证集上评估
         rsum = validate(opt, val_loader, model)
 
-        # remember best R@ sum and save checkpoint
+        # 记住最好的 R@ 和并保存检查点
         is_best = rsum > best_rsum
         best_rsum = max(rsum, best_rsum)
         save_checkpoint({
@@ -194,34 +192,33 @@ def main():
 
 
 def train(opt, train_loader, model, epoch, val_loader, best_rsum):
-    # average meters to record the training statistics
+    # 记录训练统计数据的平均
     batch_time = AverageMeter()
     data_time = AverageMeter()
     train_logger = LogCollector()
 
-    # switch to train mode
+    # 切换为训练模型
     model.train_start()
 
     end = time.time()
     for i, train_data in enumerate(train_loader):
-        # if opt.reset_train:
-            # Always reset to train mode, this is not the default behavior
+        # 切换为训练模型
         model.train_start()
 
-        # measure data loading time
+        # 记录数据加载时间
         data_time.update(time.time() - end)
 
-        # make sure train logger is used
+        # 训练日志
         model.logger = train_logger
 
-        # Update the model
+        # 更新模型
         model.train_emb(*train_data)
 
-        # measure elapsed time
+        # 记录时间
         batch_time.update(time.time() - end)
         end = time.time()
 
-        # Print log info
+        # 打印日志
         if model.Eiters % opt.log_step == 0:
             logger.info(
                 'Epoch: [{0}][{1}/{2}]\t'
@@ -232,21 +229,21 @@ def train(opt, train_loader, model, epoch, val_loader, best_rsum):
                     epoch, i, len(train_loader), batch_time=batch_time,
                     data_time=data_time, e_log=str(model.logger)))
 
-        # Record logs in tensorboard
+        # 记录日志
         tb_logger.log_value('epoch', epoch, step=model.Eiters)
         tb_logger.log_value('step', i, step=model.Eiters)
         tb_logger.log_value('batch_time', batch_time.val, step=model.Eiters)
         tb_logger.log_value('data_time', data_time.val, step=model.Eiters)
         model.logger.tb_log(tb_logger, step=model.Eiters)
 
-        # validate at every val_step
+        # 验证
         if model.Eiters % opt.val_step == 0:
             # validate(opt, val_loader, model)
 
-            # evaluate on validation set
+            # 在验证集上评估
             rsum = validate(opt, val_loader, model)
 
-            # remember best R@ sum and save checkpoint
+            # 记录最好的R@，保存检查点
             is_best = rsum > best_rsum
             best_rsum = max(rsum, best_rsum)
             save_checkpoint({
@@ -261,23 +258,23 @@ def train(opt, train_loader, model, epoch, val_loader, best_rsum):
     return best_rsum
 
 def validate(opt, val_loader, model):
-    # compute the encoding for all the validation images and captions
+    # 为验证集图像和描述文本编码
     img_embs, cap_embs = encode_data(
         model, val_loader, opt.log_step, logging.info)
 
-    # caption retrieval
+    # 描述文本召回
     (r1, r5, r10, medr, meanr) = i2t(img_embs, cap_embs, measure=opt.measure)
     logger.info("Image to text: %.1f, %.1f, %.1f, %.1f, %.1f" %
                  (r1, r5, r10, medr, meanr))
-    # image retrieval
+    # 图像召回
     (r1i, r5i, r10i, medri, meanr) = t2i(
         img_embs, cap_embs, measure=opt.measure)
-    logging.info("Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" %
+    logger.info("Text to image: %.1f, %.1f, %.1f, %.1f, %.1f" %
                  (r1i, r5i, r10i, medri, meanr))
-    # sum of recalls to be used for early stopping
+    # 用于早期停止的召回总和
     currscore = r1 + r5 + r1i + r5i 
 
-    # record metrics in tensorboard
+    # 记录日志
     tb_logger.log_value('r1', r1, step=model.Eiters)
     tb_logger.log_value('r5', r5, step=model.Eiters)
     tb_logger.log_value('r10', r10, step=model.Eiters)
@@ -300,15 +297,14 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth.tar', prefix=''):
 
 
 def adjust_learning_rate(opt, optimizer, epoch):
-    """Sets the learning rate to the initial LR
-       decayed by 10 every 30 epochs"""
+    # 将学习率设置为每 30 个 epoch 衰减 10 的初始 LR
     lr = opt.learning_rate * (0.1 ** (epoch // opt.lr_update))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
 
 def accuracy(output, target, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
+    # 计算指定 k 值的 precision@k
     maxk = max(topk)
     batch_size = target.size(0)
 

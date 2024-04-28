@@ -11,10 +11,10 @@ import json as jsonmod
 
 def get_paths(path, name='coco', use_restval=False):
     """
-    Returns paths to images and annotations for the given datasets. For MSCOCO
-    indices are also returned to control the data split being used.
-    The indices are extracted from the Karpathy et al. splits using this
-    snippet:
+    返回给定数据集的图像和注释的路径。 对于 MSCOCO
+     索引也被返回来控制正在使用的数据分割。
+     这些指数是从 Karpathy 等人的文献中提取的。 使用这个分割
+     片段：
 
     >>> import json
     >>> dataset=json.load(open('dataset_coco.json','r'))
@@ -76,30 +76,30 @@ def get_paths(path, name='coco', use_restval=False):
 
 
 class CocoDataset(data.Dataset):
-    """COCO Custom Dataset compatible with torch.utils.data.DataLoader."""
+    """加载COCO数据集"""
 
     def __init__(self, root, json, vocab, transform=None, ids=None):
         """
         Args:
-            root: image directory.
-            json: coco annotation file path.
-            vocab: vocabulary wrapper.
-            transform: transformer for image.
+            root: 图像路径
+            json: coco注释文件地址
+            vocab: 词汇表包装
+            transform: 图像增强
         """
         self.root = root
-        # when using `restval`, two json files are needed
+        # 使用“restval”时，需要两个json文件
         if isinstance(json, tuple):
             self.coco = (COCO(json[0]), COCO(json[1]))
         else:
             self.coco = (COCO(json),)
             self.root = (root,)
-        # if ids provided by get_paths, use split-specific ids
+        #如果 get_paths 提供了 ids，则使用特定于 split 的 ids
         if ids is None:
             self.ids = list(self.coco.anns.keys())
         else:
             self.ids = ids
 
-        # if `restval` data is to be used, record the break point for ids
+        # 如果要使用“restval”数据，请记录 ids 的断点
         if isinstance(self.ids, tuple):
             self.bp = len(self.ids[0])
             self.ids = list(self.ids[0]) + list(self.ids[1])
@@ -109,7 +109,7 @@ class CocoDataset(data.Dataset):
         self.transform = transform
 
     def __getitem__(self, index):
-        """This function returns a tuple that is further passed to collate_fn
+        """该函数返回一个元组，该元组进一步传递给 collat​​e_fn
         """
         vocab = self.vocab
         root, caption, img_id, path, image = self.get_raw_item(index)
@@ -117,7 +117,7 @@ class CocoDataset(data.Dataset):
         if self.transform is not None:
             image = self.transform(image)
 
-        # Convert caption (string) to word ids.
+        # 将标题（字符串）转换为单词 ID。
         tokens = nltk.tokenize.word_tokenize(
             str(caption).lower())
         caption = []
@@ -148,7 +148,7 @@ class CocoDataset(data.Dataset):
 
 class FlickrDataset(data.Dataset):
     """
-    Dataset loader for Flickr30k and Flickr8k full datasets.
+    Flickr30k 和 Flickr8k 完整数据集的数据集加载器。
     """
 
     def __init__(self, root, json, split, vocab, transform=None):
@@ -163,7 +163,7 @@ class FlickrDataset(data.Dataset):
                 self.ids += [(i, x) for x in range(len(d['sentences']))]
 
     def __getitem__(self, index):
-        """This function returns a tuple that is further passed to collate_fn
+        """该函数返回一个元组，该元组进一步传递给 collat​​e_fn
         """
         vocab = self.vocab
         root = self.root
@@ -176,7 +176,7 @@ class FlickrDataset(data.Dataset):
         if self.transform is not None:
             image = self.transform(image)
 
-        # Convert caption (string) to word ids.
+        # 将标题（字符串）转换为单词 ID。
         tokens = nltk.tokenize.word_tokenize(
             str(caption).lower())
         caption = []
@@ -192,15 +192,15 @@ class FlickrDataset(data.Dataset):
 
 class PrecompDataset(data.Dataset):
     """
-    Load precomputed captions and image features
-    Possible options: f8k, f30k, coco, 10crop
+    加载预先计算的标题和图像特征
+     可能的选项：f8k、f30k、coco、10crop
     """
 
     def __init__(self, data_path, data_split, vocab, opt):
         self.vocab = vocab
         loc = data_path + '/'
 
-        # Captions
+        # 描述
         self.captions = []
         token_caption = []
         with open(loc+'%s_caps.txt' % data_split, 'rb') as f:
@@ -213,28 +213,28 @@ class PrecompDataset(data.Dataset):
         calculate_max_len = max(each_cap_lengths) + 2
         print(calculate_max_len)
 
-        # Image features
+        # 图像特征
         self.images = np.load(loc+'%s_ims.npy' % data_split)
         self.length = len(self.captions)
-        # rkiros data has redundancy in images, we divide by 5, 10crop doesn't
+        # rkiro的数据在图像中有冗余，我们除以5，10crop没有
         if self.images.shape[0] != self.length:
             self.im_div = 5
         else:
             self.im_div = 1
-        # the development set for coco is large and so validation would be slow
+        # coco 的开发集很大，所以验证会很慢
         if data_split == 'dev':
             self.length = 5000
 
         self.max_len = opt.max_len
 
     def __getitem__(self, index):
-        # handle the image redundancy
+        # 处理图像冗余
         img_id = index/self.im_div
         image = torch.Tensor(self.images[int(img_id)])
         caption = self.captions[index]
         vocab = self.vocab
 
-        # Convert caption (string) to word ids.
+        # 将标题（字符串）转换为单词 ID。
         tokens = nltk.tokenize.word_tokenize(
             str(caption).lower())
         caption = []
@@ -244,7 +244,7 @@ class PrecompDataset(data.Dataset):
         target = torch.Tensor(caption)
 
 
-        ##### deal with caption model data
+        ####处理文本模型数据模拟
         # label = np.zeros(self.max_len)
         mask = np.zeros(self.max_len + 1)
         gts = np.zeros((self.max_len + 1))
@@ -277,7 +277,7 @@ class PrecompDataset(data.Dataset):
 
 
 def collate_fn(data):
-    """Build mini-batch tensors from a list of (image, caption) tuples.
+    """创建minibatch
     Args:
         data: list of (image, caption) tuple.
             - image: torch tensor of shape (3, 256, 256).
@@ -288,17 +288,17 @@ def collate_fn(data):
         targets: torch tensor of shape (batch_size, padded_length).
         lengths: list; valid length for each padded caption.
     """
-    # Sort a data list by caption length
+    # 按标题长度对数据列表进行排序
     data.sort(key=lambda x: len(x[1]), reverse=True)
     images, captions, ids, img_ids, caption_labels, caption_masks = zip(*data)
 
-    # Merge images (convert tuple of 3D tensor to 4D tensor)
+    # 合并图像
     images = torch.stack(images, 0)
 
     caption_labels_ = torch.stack(caption_labels, 0)
     caption_masks_ = torch.stack(caption_masks, 0)
 
-    # Merget captions (convert tuple of 1D tensor to 2D tensor)
+    # 合并描述
     lengths = [len(cap) for cap in captions]
     targets = torch.zeros(len(captions), max(lengths)).long()
     for i, cap in enumerate(captions):
@@ -326,7 +326,7 @@ def get_loader_single(data_name, split, root, json, vocab, transform,
                                 vocab=vocab,
                                 transform=transform)
 
-    # Data loader
+    # 数据记载器
     data_loader = torch.utils.data.DataLoader(dataset=dataset,
                                               batch_size=batch_size,
                                               shuffle=shuffle,
@@ -377,7 +377,7 @@ def get_loaders(data_name, vocab, crop_size, batch_size, workers, opt):
         val_loader = get_precomp_loader(dpath, 'dev', vocab, opt,
                                         batch_size, False, workers)
     else:
-        # Build Dataset Loader
+        # 创建数据加载器
         roots, ids = get_paths(dpath, data_name, opt.use_restval)
 
         transform = get_transform(data_name, 'train', opt)
@@ -408,7 +408,7 @@ def get_test_loader(split_name, data_name, vocab, crop_size, batch_size,
         test_loader = get_precomp_loader(dpath, split_name, vocab, opt,
                                          batch_size, False, workers)
     else:
-        # Build Dataset Loader
+        # 创建数据加载器
         roots, ids = get_paths(dpath, data_name, opt.use_restval)
 
         transform = get_transform(data_name, split_name, opt)
